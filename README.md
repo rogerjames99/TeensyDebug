@@ -72,7 +72,15 @@ TeensyDebug can be installed on PlatformIO or Arduino. See the relevant section 
 Installing for PlatformIO
 ===========================================
 
-Installing on Platform IO involves making a change to your `platform.ini` file. You need to change the `debug_port` item to match whatever port your systems assigns. In windows, use for form `\\.\COM9`.
+Installing on Platform IO involves making a change to your `platform.ini` file. You need to change the `debug_port` item to match whatever port your systems assigns. In windows, use for form `\\.\COM9`. On Linux when are using a USB cable to connect to your Teensy it will probably appear as one or more USB CDC ACM ports in the Linux filesystem. e.g. /dev/ttyACM0 and /dev/ttyACM1. It is not advisable to use these filesystem nodes directly, as they can be randomly assigned to different 'Serial' objects at the Teensy end. This can happen whenever the Teensy is rebooted or reconnected in an way. It is best to use the symlinks under /dev/serial/by-id or /dev/serial/by-path. The names of these symlinks are generated from information provided by the USB kernel subsystem.
+
+```
+lrwxrwxrwx 1 root root 13 Nov 22 08:43 /dev/serial/by-id/usb-Teensyduino_Dual_Serial_12205920-if00 -> ../../ttyACM0
+lrwxrwxrwx 1 root root 13 Nov 22 08:43 /dev/serial/by-id/usb-Teensyduino_Dual_Serial_12205920-if02 -> ../../ttyACM1
+lrwxrwxrwx 1 root root 13 Nov 22 08:43 /dev/serial/by-path/pci-0000:00:14.0-usb-0:11.2:1.0 -> ../../ttyACM0
+lrwxrwxrwx 1 root root 13 Nov 22 08:43 /dev/serial/by-path/pci-0000:00:14.0-usb-0:11.2:1.2 -> ../../ttyACM1
+```
+The important thing to note in these names are the final characters if00, if03, 0 and 2. These refer to the CDC sub-device identifier. 0 is always used by Serial Teensyduino class, and 2 is used by SerialUSB1.
 
 If you use PlatformIO, none of the other install steps in sections below this are necessary.
 
