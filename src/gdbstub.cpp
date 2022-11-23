@@ -69,7 +69,7 @@
 Stream *dev = NULL;
 
 /**
- * @brief Get the next character from the serial
+ * @brief Get the next character from the serial port
  * 
  * @return int Character or -1 if error
  */
@@ -78,22 +78,22 @@ int getDebugChar() {
   while(dev->available() <= 0) {
     asm volatile("wfi");
     if (millis() > timeout) {
-      // Serial.println("{timeout}");
+      // SerialUSB2.println("{timeout}");
       return -1;
     }
   }
   char c = dev->read();
-  // Serial.print("{");Serial.print(c);Serial.print("}");
+  // SerialUSB2.print("{");SerialUSB2.print(c);SerialUSB2.print("}");
   return c;
 }
 
 /**
- * @brief Send a character to the serial
+ * @brief Send a character to the serial port
  * 
  * @param c Character to send (one 8-bit byte)
  */
 void putDebugChar(int c) {
-  // Serial.print("[");Serial.print((char)c);Serial.print("]");
+  // SerialUSB2.print("[");SerialUSB2.print((char)c);SerialUSB2.print("]");
   dev->write(c);
 }
 
@@ -104,12 +104,12 @@ void putDebugChar(int c) {
  * @return int Number of characters to read
  */
 int hasDebugChar() {
-  // Serial.println("has?");
+  // SerialUSB2.println("has?");
   return dev->available();
 }
 
 /**
- * @brief Initialize serial
+ * @brief Initialize serial port
  * 
  */
 void devInit(Stream *device = NULL) {
@@ -240,7 +240,7 @@ static int hex32ToInt(const char **ptr)
   i[2] = (hex(p[4]) << 4) + hex(p[5]);
   i[3] = (hex(p[6]) << 4) + hex(p[7]);
 
-  // Serial.print("parse ");Serial.println(intValue);
+  // SerialUSB2.print("parse ");SerialUSB2.println(intValue);
   *ptr += 8;
   return intValue;
 }
@@ -264,7 +264,7 @@ static int strToInt(const char *str) {
  */
 void sendResult(const char *result) {
 #ifdef GDB_DEBUG_COMMANDS
-  Serial.print("target reply:");Serial.println(result);
+  SerialUSB2.print("target reply:");SerialUSB2.println(result);
 #endif
   int checksum = calcChecksum(result);
   const char *presult = result;
@@ -275,7 +275,7 @@ void sendResult(const char *result) {
   putDebugChar('#');
   putDebugChar(int2hex[checksum >> 4]);
   putDebugChar(int2hex[checksum & 0x0F]);
-  // Serial.println(result);
+  // SerialUSB2.println(result);
 }
 
 // global flag to enabling or suspending debug system
@@ -349,11 +349,11 @@ int file_io_errno;
 volatile int file_io_pending = 0;
 
 int gdb_file_io(const char *cmd) {
-  // Serial.println(cmd);
+  // SerialUSB2.println(cmd);
   file_io_pending = 1;
   sendResult(cmd);
   gdb_wait_for_flag(&file_io_pending, 1000);
-  // Serial.println(file_io_result);
+  // SerialUSB2.println(file_io_result);
   return file_io_result;
 }
 
@@ -416,7 +416,7 @@ int process_g(const char *cmd, char *result) {
   uint32_t sp = debug.getRegister("sp");
   if ((pc|1) == (uint32_t)&fake_breakpoint) {
     pc = MAP_DUMMY_BREAKPOINT;
-    // Serial.print("fake sp:");Serial.println(sp, HEX);
+    // SerialUSB2.print("fake sp:");SerialUSB2.println(sp, HEX);
     sp = fakesp;
   }
 
@@ -482,7 +482,7 @@ int process_P(const char *cmd, char *result) {
   int reg = hex(*cmd++);
   cmd++; // skip '='
   uint32_t val = hex32ToInt(&cmd);
-  // Serial.print("Reg ");Serial.print(reg);Serial.print("=");Serial.println(val, HEX);
+  // SerialUSB2.print("Reg ");SerialUSB2.print(reg);SerialUSB2.print("=");SerialUSB2.println(val, HEX);
   switch(reg) {
     case 0: debug.setRegister("r0", val); break;
     case 1: debug.setRegister("r1", val); break;
@@ -561,7 +561,7 @@ int process_m(const char *cmd, char *result) {
     hexToInt(&cmd, &sz);
   }
 
-  // Serial.print("read at ");Serial.println(addr, HEX);
+  // SerialUSB2.print("read at ");SerialUSB2.println(addr, HEX);
 
   if (isValidAddress(addr, sz) == 0) {
     strcpy(result, "E01");
@@ -746,7 +746,7 @@ int process_Z(const char *cmd, char *result) {
   }
   else if (debug.setBreakpoint((void*)addr)) {
 #ifdef GDB_DEBUG_COMMANDS
-  Serial.print("Breakpoint failed on ");Serial.println(addr);
+  SerialUSB2.print("Breakpoint failed on ");SerialUSB2.println(addr);
 #endif
     strcpy(result, "E01");
   }
@@ -796,7 +796,7 @@ int process_monitor(char *cmd, char *result) {
   char *place = cmd;
   char *word;
   word = getNextWord(&place);
-  // Serial.print("command :");Serial.print(word);Serial.println(":");
+  // SerialUSB2.print("command :");SerialUSB2.print(word);SerialUSB2.println(":");
   if (stricmp(word, "digitalWrite") == 0) {
     char *pin = getNextWord(&place);
     char *state = getNextWord(&place);
@@ -848,7 +848,7 @@ int process_monitor(char *cmd, char *result) {
     int args = 0, p[4], ret;
     char *arg = getNextWord(&place);
     uint32_t addr = strToInt(arg);
-    // Serial.print("addr ");Serial.println(addr);
+    // SerialUSB2.print("addr ");SerialUSB2.println(addr);
     if (addr == 0) {
       mem2hex(result, "E Invalid address\n");
       return 0;
@@ -858,10 +858,10 @@ int process_monitor(char *cmd, char *result) {
       if (*place == 0) break; 
       arg = getNextWord(&place);
       p[args] = strToInt(arg);
-      // Serial.print("parameter ");Serial.println(p[args]);
+      // SerialUSB2.print("parameter ");SerialUSB2.println(p[args]);
       args++;
     }
-    // Serial.print("arguments ");Serial.println(args);
+    // SerialUSB2.print("arguments ");SerialUSB2.println(args);
     switch(args) {
       case 0:
         call0 = (int (*)())addr;
@@ -931,7 +931,7 @@ int process_q(const char *cmd, char *result) {
  * @return int 
  */
 int process_F(const char *cmd, char *result) {
-  // Serial.println(cmd);
+  // SerialUSB2.println(cmd);
   cmd++;
   // error
   if (*cmd == '-') { 
@@ -986,7 +986,7 @@ int process_D(char *cmd, char *result) {
 
 int process_v(char *cmd, char *result) {
   char *work = getNextToken(&cmd, ';');
-  // Serial.print("v:");Serial.println(work);
+  // SerialUSB2.print("v:");SerialUSB2.println(work);
   if (strcmp(work, "vKill") == 0) {
     strcpy(result, "OK");    
   }
@@ -1049,19 +1049,19 @@ void processGDBinput() {
   int c = getDebugChar();
 
   if (c < 0) {
-    // Serial.println("Error reading");
+    // SerialUSB2.println("Error reading");
     return;
   }
 
   // GDB ack'd our last command; don't do anything yet with this
   if (c == '+') {
-    // Serial.println("ACK");
+    // SerialUSB2.println("ACK");
     return;
   }
 
   // GDB had a problem with last command; should resend. TODO
   if (c == '-') {
-    // Serial.println("NAK");
+    // SerialUSB2.println("NAK");
     if (file_io_pending) {
       file_io_result = -1;
       file_io_pending = 0;
@@ -1071,7 +1071,7 @@ void processGDBinput() {
 
   // User hit Ctrl-C or other break
   if (c == 0x03) {
-    // Serial.println("Ctrl-C");
+    // SerialUSB2.println("Ctrl-C");
     cause_break = 1; // cause break later so we don't break internals
     return;
   }
@@ -1079,8 +1079,8 @@ void processGDBinput() {
   // If we don't have a valid start command, then something went wrong so
   // we just ignore it.
   if (c != '$') {
-    // Serial.print("Bad char: ");
-    // Serial.println((char)c, HEX);
+    // SerialUSB2.print("Bad char: ");
+    // SerialUSB2.println((char)c, HEX);
     return; // wait for start char
   }
 
@@ -1097,7 +1097,7 @@ void processGDBinput() {
     c = getDebugChar();
 
     if (c == -1) {
-      // Serial.println("read error");
+      // SerialUSB2.println("read error");
       putDebugChar('-');
       return;
     }
@@ -1111,7 +1111,7 @@ void processGDBinput() {
   *pcmd = 0;
   
 #ifdef GDB_DEBUG_COMMANDS
-  Serial.print("gdb command:");Serial.println(cmd);
+  SerialUSB2.print("gdb command:");SerialUSB2.println(cmd);
 #endif
 
   c = getDebugChar();
@@ -1119,8 +1119,8 @@ void processGDBinput() {
   c = getDebugChar();
   checksum += hex(c);
   if (checksum != calcChecksum(cmd)) {
-    // Serial.println("bad checksum");
-    // Serial.println(calcChecksum(cmd), HEX);
+    // SerialUSB2.println("bad checksum");
+    // SerialUSB2.println(calcChecksum(cmd), HEX);
     putDebugChar('-');
     return;
   }
@@ -1146,7 +1146,7 @@ void processGDB() {
 #if 0
   static unsigned int nexttick = millis() + 1000;
   if (millis() > nexttick) {
-    // Serial.println("tick");
+    // SerialUSB2.println("tick");
     gdb_out_print("ping");
     nexttick += 1000;
   }
@@ -1156,12 +1156,12 @@ void processGDB() {
     processGDBinput();
   }
   if (send_message[0]) {
-    // Serial.print("send ");Serial.println(send_message);
+    // SerialUSB2.print("send ");SerialUSB2.println(send_message);
     sendResult(send_message);
     send_message[0] = 0;
   }
   if (cause_break) {
-    // Serial.println("BREAK!!");
+    // SerialUSB2.println("BREAK!!");
     cause_break = 0;
     debug_id = 1;
     // NVIC_SET_PENDING(IRQ_SOFTWARE); 
